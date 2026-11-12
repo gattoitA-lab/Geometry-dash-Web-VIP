@@ -5046,7 +5046,7 @@ _buildPauseOverlay() {
         localStorage.setItem("userSfxVol", v);
     });
  }
-_buildSettingsPopup() {
+_buildSettingsPopup(initialPage = 0) {
     if (this._settingsPopup) return;
 
     const i18n = window.GD_T || (value => value);
@@ -5075,7 +5075,7 @@ _buildSettingsPopup() {
     });
 
     const pages = ["Gameplay", "Visual", "Advanced", "Performance", "Language"];
-    let currentPage = 0;
+    let currentPage = Number.isInteger(initialPage) ? Math.max(0, Math.min(pages.length - 1, initialPage)) : 0;
     const pageTitle = this.add.bitmapText(0, -(panelHeight / 2) + 45, "bigFont", pages[currentPage], 40).setOrigin(0.5);
     innerContainer.add(pageTitle);
     const leftArrow = this.add.image(-(panelWidth / 2) - 130, 0, "GJ_GameSheet03", "GJ_arrow_01_001.png")
@@ -5606,7 +5606,7 @@ _buildSettingsPopup() {
         else if (idx === 4) buildLanguagePage(pageContainer);
     };
 
-    buildPage(0);
+    buildPage(currentPage);
 
     this._makeBouncyButton(leftArrow, 1, () => {
         currentPage = (currentPage - 1 + pages.length) % pages.length;
@@ -9926,7 +9926,7 @@ window.open("https://github.com/web-dashers/web-dashers.github.io", "_blank"); }
     _makeSettingsBtn(_sColL, _sRow1Y, "Account",    _sBtnW2, false, null);
     _makeSettingsBtn(_sColR, _sRow1Y, "How To Play", _sBtnW2, true, () => { this._buildHowToPlayPopup(); });
     _makeSettingsBtn(_sColL, _sRow2Y, "Options",    _sBtnW2, true,  () => { this._buildSettingsPopup(); });
-    _makeSettingsBtn(_sColR, _sRow2Y, "Graphics",   _sBtnW2, false, null);
+    _makeSettingsBtn(_sColR, _sRow2Y, "Graphics",   _sBtnW2, true,  () => { this._buildSettingsPopup(1); });
     _makeSettingsBtn(_sCol3L, _sRow3Y, "Rate",      _sBtnW3, true, () => { this._redirectRate(); });
     _makeSettingsBtn(_sCol3M, _sRow3Y, "Songs",     _sBtnW3, true, () => { this._hideSettingsScreen(() => this.time.delayedCall(150, () => this._buildsongspopup())); });
     _makeSettingsBtn(_sCol3R, _sRow3Y, "Help",      _sBtnW3, true, () => { this._hideSettingsScreen(() => this.time.delayedCall(150, () => this._buildhelppopup())); });
