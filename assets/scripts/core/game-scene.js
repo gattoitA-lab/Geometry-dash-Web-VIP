@@ -393,6 +393,12 @@ class GameScene extends Phaser.Scene {
     });
   }
   create() {
+    if (window.GD_T) {
+      const _originalAddText = this.add.text.bind(this.add);
+      this.add.text = (x, y, text, style) => _originalAddText(x, y, window.GD_T(text), style);
+      const _originalAddBitmapText = this.add.bitmapText.bind(this.add);
+      this.add.bitmapText = (x, y, font, text, size, align) => _originalAddBitmapText(x, y, font, window.GD_T(text), size, align);
+    }
     this._bgSpeedX = 0.1;
     this._bgSpeedY = 0.1;
     this._menuCameraX = -centerX;
@@ -5043,6 +5049,7 @@ _buildPauseOverlay() {
 _buildSettingsPopup() {
     if (this._settingsPopup) return;
 
+    const i18n = window.GD_T || (value => value);
     const centerX = screenWidth / 2,
         centerY = 320,
         panelWidth = 800,
@@ -5067,7 +5074,7 @@ _buildSettingsPopup() {
         this._settingsPopup = null;
     });
 
-    const pages = ["Gameplay", "Visual", "Advanced", "Performance"];
+    const pages = ["Gameplay", "Visual", "Advanced", "Performance", "Language"];
     let currentPage = 0;
     const pageTitle = this.add.bitmapText(0, -(panelHeight / 2) + 45, "bigFont", pages[currentPage], 40).setOrigin(0.5);
     innerContainer.add(pageTitle);
@@ -5524,16 +5531,44 @@ _buildSettingsPopup() {
         );
     };
 
+    const buildLanguagePage = (container) => {
+        const helpText = this.add.bitmapText(column1X, startY - 60, "bigFont", "Choose the game language", 28)
+            .setOrigin(0, 0.5);
+        container.add(helpText);
+
+        const buttonBorder = this.textures.get("GJ_button01").source[0].width * 0.3;
+        const makeLanguageButton = (x, y, language, label) => {
+            const selected = (window.GD_LANG || "en") === language;
+            const group = this.add.container(x, y);
+            const button = this.add.nineslice(0, 0, "GJ_button01", null, 260, 62, buttonBorder, buttonBorder, buttonBorder, buttonBorder)
+                .setOrigin(0.5)
+                .setTint(selected ? 0xffffff : 0x777777);
+            const text = this.add.bitmapText(0, -5, "goldFont", label, 40).setOrigin(0.5, 0.5);
+            if (!selected) text.setTint(0x999999);
+            group.add([button, text]);
+            const hitZone = this.add.zone(0, 0, 260, 62).setInteractive({ useHandCursor: true });
+            hitZone.on("pointerup", () => {
+                if (window.GD_setLanguage) window.GD_setLanguage(language);
+            });
+            group.add(hitZone);
+            container.add(group);
+        };
+
+        makeLanguageButton(column1X, startY + 35, "en", "English");
+        makeLanguageButton(column2X, startY + 35, "it", "Italiano");
+    };
+
     const buildPage = (idx) => {
         pageContainer.destroy();
         pageContainer = this.add.container(0, 0);
         innerContainer.add(pageContainer);
-        pageTitle.setText(pages[idx]);
+        pageTitle.setText(i18n(pages[idx]));
         
         if (idx === 0) buildGameplayPage(pageContainer);
         else if (idx === 1) buildVisualPage(pageContainer);
         else if (idx === 2) buildAdvancedPage(pageContainer);
         else if (idx === 3) buildPerformancePage(pageContainer);
+        else if (idx === 4) buildLanguagePage(pageContainer);
     };
 
     buildPage(0);
