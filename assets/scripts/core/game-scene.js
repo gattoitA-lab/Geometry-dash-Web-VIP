@@ -5393,7 +5393,42 @@ _buildSettingsPopup() {
     };
 
     const buildVisualPage = (container) => {
-        createToggle(container, column1X, startY, "Show Hitboxes", 
+        const visualStartY = startY + 80;
+        const visualSpacing = 60;
+
+        const qualityLabel = this.add.bitmapText(column1X, startY - 30, "bigFont", "Graphics Quality", 24).setOrigin(0, 0.5);
+        container.add(qualityLabel);
+        const qualityOptions = [["auto", "Auto"], ["low", "Low"], ["medium", "Medium"], ["max", "Max"]];
+        qualityOptions.forEach((option, index) => {
+            const selected = (window.gdGraphicsQuality || "auto") === option[0];
+            const qualityBtn = this.add.text(column1X + index * 100, startY + 5, option[1], {
+                fontFamily: "Arial, sans-serif",
+                fontSize: "16px",
+                color: selected ? "#ffffff" : "#b9d7ff",
+                backgroundColor: selected ? "#1f8fff" : "#001f4f",
+                padding: { x: 6, y: 7 },
+                align: "center"
+            }).setOrigin(0, 0.5).setFixedSize(92, 34).setInteractive({ useHandCursor: true });
+            qualityBtn.on("pointerup", () => {
+                window.gdGraphicsQuality = option[0];
+                this._applyGraphicsSettings();
+                this._saveSettings();
+                buildPage(1);
+            });
+            container.add(qualityBtn);
+        });
+
+        createToggle(container, column1X, startY + 40, "FPS Unlock",
+            () => !!window.fpsUnlock,
+            (v) => window.fpsUnlock = v,
+            () => { this._applyGraphicsSettings(); this._saveSettings(); },
+            undefined,
+            25,
+            true,
+            "FPS Unlock"
+        );
+
+        createToggle(container, column1X, visualStartY, "Show Hitboxes", 
             () => window.showHitboxes, 
             (v) => window.showHitboxes = v,
             (v) => { 
@@ -5408,7 +5443,7 @@ _buildSettingsPopup() {
             "Show Hitboxes"
         );
 
-        createToggle(container, column1X, startY + (spacingY), "Hitbox Trail", 
+        createToggle(container, column1X, visualStartY + visualSpacing, "Hitbox Trail", 
             () => window.showHitboxTrail, 
             (v) => window.showHitboxTrail = v,
             (v) => { if (window.showHitboxes) this._player.drawHitboxes(this._player._hitboxGraphics, this._cameraX, this._cameraY); },
@@ -5417,7 +5452,7 @@ _buildSettingsPopup() {
             "Hitbox Trail"
         );
         
-        createToggle(container, column1X, startY + (spacingY * 2), "Hitboxes on Death", 
+        createToggle(container, column1X, visualStartY + (visualSpacing * 2), "Hitboxes on Death", 
             () => window.hitboxesOnDeath, 
             (v) => window.hitboxesOnDeath = v,
             undefined,
@@ -5426,7 +5461,7 @@ _buildSettingsPopup() {
             "Hitboxes on Death"
         );
 
-        createToggle(container, column1X, startY + (spacingY * 3), "Show FPS", 
+        createToggle(container, column1X, visualStartY + (visualSpacing * 3), "Show FPS", 
             () => this._fpsText.visible, 
             (v) => this._fpsText.visible = v,
             (v) => { if (this._fpsText) this._fpsText.setVisible(v); },
@@ -5435,7 +5470,7 @@ _buildSettingsPopup() {
             "Show FPS"
         );
 
-        createToggle(container, column1X, startY + (spacingY * 4), "Solid Wave Trail", 
+        createToggle(container, column1X, visualStartY + (visualSpacing * 4), "Solid Wave Trail", 
             () => window.solidWave, 
             (v) => window.solidWave = v,
             null,
@@ -5444,7 +5479,7 @@ _buildSettingsPopup() {
             "Solid Wave Trail"
         );
         
-        createToggle(container, column1X, startY + (spacingY * 5), "Show CPS",
+        createToggle(container, column1X, visualStartY + (visualSpacing * 5), "Show CPS",
             () => window.showCPS,
             (v) => window.showCPS = v,
             null,
@@ -5453,7 +5488,7 @@ _buildSettingsPopup() {
             "Show CPS"
         );
 
-        createToggle(container, column2X, startY, "Show Glow", 
+        createToggle(container, column2X, visualStartY, "Show Glow", 
             () => window.showGlow, 
             (v) => window.showGlow = v,
             () => { if (this._level && this._level._updateGlowVisibility) this._level._updateGlowVisibility(); },
@@ -5462,25 +5497,25 @@ _buildSettingsPopup() {
             "Show Glow"
         );
 
-        createToggle(container, column2X, startY + spacingY, "Create Object ID labels", 
+        createToggle(container, column2X, visualStartY + visualSpacing, "Create Object ID labels", 
             () => window.createObjectIds, 
             (v) => window.createObjectIds = v,
             null, 17
         );
 
-        createToggle(container, column2X, startY + (spacingY * 2), "Show Object ID labels", 
+        createToggle(container, column2X, visualStartY + (visualSpacing * 2), "Show Object ID labels", 
             () => window.showObjectIds, 
             (v) => window.showObjectIds = v,
             null, 17
         );
-        createToggle(container, column2X, startY + (spacingY * 3), "Enable Portal Guide", 
+        createToggle(container, column2X, visualStartY + (visualSpacing * 3), "Enable Portal Guide", 
             () => window.enablePortalGuide, 
             (v) => window.enablePortalGuide = v,
             null, 22,
             true,
             "Enable Portal Guide"
         );
-        createToggle(container, column2X, startY + (spacingY * 4), "Enable Orb Guide", 
+        createToggle(container, column2X, visualStartY + (visualSpacing * 4), "Enable Orb Guide", 
             () => window.enableOrbGuide, 
             (v) => window.enableOrbGuide = v,
             null,
@@ -5488,7 +5523,7 @@ _buildSettingsPopup() {
             true,
             "Enable Orb Guide"
         );
-          createToggle(container, column2X, startY + (spacingY * 5), "Default Mini Icon", 
+          createToggle(container, column2X, visualStartY + (visualSpacing * 5), "Default Mini Icon", 
             () => window.enableMiniIcon, 
             (v) => window.enableMiniIcon = v,
             null, //broken script refrence???? null??? 
@@ -5615,6 +5650,8 @@ _buildSettingsPopup() {
         enableOrbGuide: window.enableOrbGuide,
         enableMiniIcon: window.enableMiniIcon,
         cullDistance: window.cullDistance,
+        graphicsQuality: window.gdGraphicsQuality || "auto",
+        fpsUnlock: !!window.fpsUnlock,
         settingInfoText: window.settingInfoText || {},
         enableLDM: window.enableLDM,
     };
@@ -5647,7 +5684,9 @@ _buildSettingsPopup() {
         enableOrbGuide: false,
         enableMiniIcon: false,
         enableLDM: false,
-        cullDistance: 3
+        cullDistance: 3,
+        graphicsQuality: "auto",
+        fpsUnlock: false
     };
 
     const data = { ...defaults, ...(saved ? JSON.parse(saved) : {}) };
@@ -5678,6 +5717,43 @@ _buildSettingsPopup() {
     window.useDirectInternet = !!data.useDirectInternet;
     localStorage.setItem("gd_useDirectInternet", String(!!window.useDirectInternet));
     window.enableLDM = !!data.enableLDM;
+    window.gdGraphicsQuality = ["auto", "low", "medium", "max"].includes(data.graphicsQuality) ? data.graphicsQuality : "auto";
+    window.fpsUnlock = !!data.fpsUnlock;
+    this._applyGraphicsSettings();
+  }
+  _resolveGraphicsQuality() {
+    const quality = window.gdGraphicsQuality || "auto";
+    if (quality !== "auto") return quality;
+    const userAgent = navigator.userAgent || "";
+    const memory = Number(navigator.deviceMemory || 0);
+    const cores = Number(navigator.hardwareConcurrency || 0);
+    if (/Android|iPhone|iPad|iPod|Mobile/i.test(userAgent) || (memory > 0 && memory <= 4) || (cores > 0 && cores <= 4)) {
+      return "low";
+    }
+    if ((memory > 0 && memory <= 8) || (cores > 0 && cores <= 8)) {
+      return "medium";
+    }
+    return "max";
+  }
+  _applyGraphicsSettings() {
+    const quality = this._resolveGraphicsQuality();
+    const profiles = {
+      low: { cullDistance: 1, enableLDM: true },
+      medium: { cullDistance: 2, enableLDM: false },
+      max: { cullDistance: 3, enableLDM: false }
+    };
+    const profile = profiles[quality] || profiles.medium;
+    window.gdResolvedGraphicsQuality = quality;
+    window.cullDistance = profile.cullDistance;
+    window.enableLDM = profile.enableLDM;
+
+    const loop = this.game && this.game.loop;
+    if (loop) {
+      const limit = window.fpsUnlock ? 0 : 60;
+      loop.fpsLimit = limit;
+      loop.hasFpsLimit = limit > 0;
+      loop._limitRate = limit > 0 ? 1000 / limit : 0;
+    }
   }
   _buildMacroPopup() {
       if (this._macroPopup) return;
