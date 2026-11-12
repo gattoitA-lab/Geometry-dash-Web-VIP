@@ -4,7 +4,7 @@
 
 <div align="center">
   <img  
-  alt="Web Dashers" 
+  alt="GWebD" 
   src="./wd_branding/wordmark/wordmark_1080.png" 
   />
   <p>
@@ -51,9 +51,9 @@
 
 ## What we hope to see added in the future:
 - **All Gamemodes** - Currently, every gamemode except the Swing has been implemented. There is a chance it will, and will not be added.
-- **All Objects Working** - In the current state of Web Dashers, you might notice some objects seem to be bugged, such as a lack of animations, and coloring being incorrect.
+- **All Objects Working** - In the current state of GWebD, you might notice some objects seem to be bugged, such as a lack of animations, and coloring being incorrect.
 
-### Come try out the WIP Web Dashers demo at:
+### Come try out the WIP GWebD demo at:
 **[web-dashers.github.io](https://web-dashers.github.io/)**
 
 <sub> Last updated: 8/7/2026

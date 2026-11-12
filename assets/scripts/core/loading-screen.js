@@ -172,7 +172,7 @@ class BootScene extends Phaser.Scene {
       "Hop the big guy doesn't wakt up...",
       "Shhhh! You're gonna wake the big one!",
       "I have been expecting you.",
-      "A wild WebDasher appeared!",
+      "A wild GWebD appeared!",
       "So many secrets...",
       "Hiding rocket launcher",
       "It's Over 9000!",

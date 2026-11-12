@@ -134,7 +134,7 @@ class MacroBot {
     this.frames = [];
     this.currentFrameState = null;
     this.meta = {
-      author: "Web Dashers",
+      author: "GWebD",
       level: "",
       version: 2,
     };
@@ -1628,7 +1628,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
     };
     this._exportGMD = (level) => {
         const encodedDesc = btoa(unescape(encodeURIComponent(level.description || "")));
-        const authorName = "Web Dashers";
+        const authorName = "GWebD";
         const officialSong = level.songId < 0 ? Math.abs(level.songId) : 0;
         const customSong = level.songId > 0 ? level.songId : 0;
         const rawLevelData = this._decodeWebLevelStringForGMD(level.levelString);
@@ -9548,7 +9548,7 @@ _applyMirrorEffect() {
       window.open("https://docs.phaser.io/", "_blank");
     }, () => !this._helpclose);
     this._helplayer.add(phaserlogo);
-    this._helplayer.add(this.add.bitmapText(containerX, 440, "goldFont", "Web Dashers not associated with RobTop Games", 22).setOrigin(0.5, 0.5));
+    this._helplayer.add(this.add.bitmapText(containerX, 440, "goldFont", "GWebD not associated with RobTop Games", 22).setOrigin(0.5, 0.5));
 
     const _helpbuttonborder = this.textures.get("GJ_button01").source[0].width * 0.3;
     const _helpbtnh = 70;
