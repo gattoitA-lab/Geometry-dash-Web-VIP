@@ -227,6 +227,20 @@ class BootScene extends Phaser.Scene {
       this.children.bringToTop(robtopLogo);
       this.children.bringToTop(gjLogo);
       this.children.bringToTop(Logo);
+      this.add.text(cx, cy + 84, "Geometry Dash Web - Vip", {
+        fontSize: "30px",
+        fontFamily: "Arial Black, Arial, sans-serif",
+        color: "#ffffff",
+        stroke: "#002e75",
+        strokeThickness: 6
+      }).setOrigin(0.5, 0).setDepth(20);
+      this.add.text(W - 18, H - 56, "GattoItaliano", {
+        fontSize: "18px",
+        fontFamily: "Arial, sans-serif",
+        color: "#ffffff",
+        stroke: "#000000",
+        strokeThickness: 4
+      }).setOrigin(1, 1).setDepth(20);
       if (window.gameCache) {
         const originalXhr = this.load.xhrLoader;
         this.load.xhrLoader = (file) => {
@@ -351,7 +365,12 @@ class BootScene extends Phaser.Scene {
         });
       });
 
-      this.load.start();
+      setTimeout(() => {
+        if (this.load.state === Phaser.Loader.LOADER_LOADING) {
+          this.load.state = Phaser.Loader.LOADER_COMPLETE;
+        }
+        this.load.start();
+      }, 50);
     });
   }
   create() {

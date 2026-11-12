@@ -572,11 +572,18 @@ class GameScene extends Phaser.Scene {
     return icon;
   });
 
-    this._copyrightText = this.add.text(0, 630, "© 2026 RobTop Games · geometrydash.com", {
+    this._copyrightText = this.add.text(0, screenHeight - 16, "Version 2.1", {
       fontSize: "14px",
       color: "#ffffff",
       fontFamily: "Arial"
-    }).setOrigin(1, 1).setScrollFactor(0).setDepth(30).setAlpha(0.3);
+    }).setOrigin(1, 1).setScrollFactor(0).setDepth(30).setAlpha(0.7);
+    this._vipCreditText = this.add.text(0, 64, "Geometry Dash Web by GattoItaliano", {
+      fontSize: "16px",
+      color: "#ffffff",
+      fontFamily: "Arial",
+      stroke: "#002e75",
+      strokeThickness: 4
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(30).setAlpha(0.9);
     this._tryMeImg = this.add.image(0, 150, "GJ_MenuBeta").setScrollFactor(0).setDepth(30).setScale(0.75);
     this._downloadBtns = [];
     const _0x4fc67f = [
@@ -2421,12 +2428,56 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       gfx.fillStyle(extraPanelColor, panelAlpha);
       gfx.fillRoundedRect(panelLeft, extraPanelY, panelW, extraPanelH, panelRadius);
 
-      const extraComingSoon = this.add.bitmapText(sw / 2, extraPanelY + extraPanelH / 2, "bigFont", "Coming Soon!", 42)
-        .setScrollFactor(0).setDepth(105).setOrigin(0.5, 0.5).setTint(0xadd8e6).setAlpha(0.75);
+      const serverLabelW = 62;
+      const serverGap = 10;
+      const serverBtnW = Math.max(120, Math.min(210, (panelW - serverLabelW - 46 - serverGap) / 2));
+      const serverCenterY = extraPanelY + extraPanelH / 2;
+      const serverStartX = panelLeft + 18 + serverLabelW;
+      const serverLabel = this.add.text(panelLeft + 18, serverCenterY, "Server", {
+        fontFamily: "Arial, sans-serif",
+        fontSize: "18px",
+        color: "#ffffff",
+        fontStyle: "bold"
+      }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(106);
+
+      const _makeServerButton = (x, text, key) => {
+        const btn = this.add.text(x, serverCenterY, text, {
+          fontFamily: "Arial, sans-serif",
+          fontSize: "13px",
+          color: "#ffffff",
+          align: "center",
+          backgroundColor: "#001f4f"
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(106).setInteractive({ useHandCursor: true });
+        btn.setFixedSize(serverBtnW, 44);
+        btn.setPadding(4, 3, 4, 3);
+        btn._serverKey = key;
+        return btn;
+      };
+      const serverRobtopBtn = _makeServerButton(serverStartX + serverBtnW / 2, "RobTop (Attuale)", "robtop");
+      const serverGDWebBtn = _makeServerButton(serverStartX + serverBtnW + serverGap + serverBtnW / 2, "Geometry Dash Web\nI livelli di Geometry Dash Web", "gdweb");
+      const _refreshServerButtons = () => {
+        const active = window._levelSearchServer || "robtop";
+        [serverRobtopBtn, serverGDWebBtn].forEach(btn => {
+          const selected = btn._serverKey === active;
+          btn.setBackgroundColor(selected ? "#1f8fff" : "#001f4f");
+          btn.setColor(selected ? "#ffffff" : "#b9d7ff");
+        });
+      };
+      serverRobtopBtn.on("pointerup", () => {
+        window._levelSearchServer = "robtop";
+        _refreshServerButtons();
+      });
+      serverGDWebBtn.on("pointerup", () => {
+        window._levelSearchServer = "gdweb";
+        _refreshServerButtons();
+        this._closeSearchMenu(true);
+        this._openLevelSelect();
+      });
+      _refreshServerButtons();
 
       this._searchOverlayObjects.push(gfx, qsLabel, filtersLabel, cornerBR, cornerBL,
         placeholderLabel, typedLabel, inputCursor, inputHitZone, innerBtn1, innerBtn2, innerBtn3,
-        extraComingSoon);
+        serverLabel, serverRobtopBtn, serverGDWebBtn);
 
       let _loading = false;
       const _diffFilterCodeMap = [-1, 1, 2, 3, 4, 5, -2, -3];
@@ -3918,10 +3969,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
     } else if (this._audio.isplaying() && !shouldPlayMenuMusic) {
       this._audio.stopMusic();
     }
-    if (!window.updateLogShown) {
-      this._buildUpdateLogPopup();
-      window.updateLogShown = true;
-    }
+
     if (window.levelID) {
         this._openSearchMenu();
     }
@@ -4116,8 +4164,8 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
     const arrowL = this.add.image(55, cy - 25, "GJ_GameSheet03", "navArrowBtn_001.png").setScrollFactor(0).setDepth(154).setScale(1.1).setFlipX(true).setInteractive();
     const arrowR = this.add.image(sw - 55, cy - 25, "GJ_GameSheet03", "navArrowBtn_001.png").setScrollFactor(0).setDepth(154).setScale(1.1).setFlipX(false).setInteractive();
     const allLevels = window.allLevels || [];
-    const visibleLevels = allLevels.filter(level => !(level && level[2] === "level_22"));
-    const pageCount = visibleLevels.length + 1;
+    const visibleLevels = allLevels;
+    const pageCount = visibleLevels.length;
     let currentPageIndex = visibleLevels.findIndex(l => l[2] === window.currentlevel[2]);
     if (currentPageIndex < 0) currentPageIndex = 0;
     const isComingSoonPage = () => currentPageIndex >= visibleLevels.length;
@@ -6992,6 +7040,7 @@ _showwippopup() {
       this._robLogo.destroy();
       this._robLogo = null;
     });
+    if (this._vipCreditText) this._vipCreditText.setVisible(false);
     _dismiss(this._copyrightText, { y: 680, duration: 300, ease: "Quad.In" }, () => {
       this._copyrightText.destroy();
       this._copyrightText = null;
@@ -7258,7 +7307,12 @@ _showwippopup() {
       this._menuInfoBtn.x = screenWidth - 30 - 3;
     }
     if (this._copyrightText) {
-      this._copyrightText.x = screenWidth - 850;
+      this._copyrightText.x = screenWidth - 18;
+      this._copyrightText.y = screenHeight - 16;
+    }
+    if (this._vipCreditText) {
+      this._vipCreditText.x = screenWidth - 18;
+      this._vipCreditText.y = 64;
     }
     if (this._tryMeImg) {
       this._tryMeImg.x = _0x1e5db8 + 260;
