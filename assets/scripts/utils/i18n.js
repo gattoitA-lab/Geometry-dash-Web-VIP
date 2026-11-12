@@ -129,7 +129,30 @@
     "Deaths": "Morti",
     "Time": "Tempo",
     "No macro loaded": "Nessuna macro caricata",
-    "Web Bot v2.1": "Web Bot v2.1"
+    "Web Bot v2.1": "Web Bot v2.1",
+    "TAP": "TOCCA",
+    "HOLD": "TIENI PREMUTO",
+    "Hold": "Tieni premuto",
+    "Release": "Rilascia",
+    " the screen to jump.": " lo schermo per saltare.",
+    " down to keep jumping.": " per continuare a saltare.",
+    " to fly up.": " per volare in alto.",
+    " to fly down.": " per volare in basso.",
+    "You can enter ": "Puoi entrare in ",
+    "practice mode": "modalità pratica",
+    " from": " da",
+    "the pause menu.": "il menu di pausa.",
+    "Practice mode lets you place": "La modalità pratica permette di posizionare",
+    "checkpoints": "checkpoint",
+    "You can place checkpoints manually, or": "Puoi posizionare checkpoint manualmente, oppure",
+    "use the auto-checkpoints feature.": "usare i checkpoint automatici.",
+    "Tap the delete button to remove your": "Tocca il pulsante elimina per rimuovere il tuo",
+    "last checkpoint.": "ultimo checkpoint.",
+    "Jump Orbs": "Orb di salto",
+    " activate when you are on": " si attivano quando sei sopra",
+    "top of them.": "di essi.",
+    " while touching an orb to": " mentre tocchi un orb per",
+    "interact with it and use its effect.": "interagirci e usarne l'effetto."
   };
 
   function currentLanguage() {

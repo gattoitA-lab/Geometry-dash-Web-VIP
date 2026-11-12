@@ -6478,7 +6478,7 @@ _showwippopup() {
       currentPage++;
       tutorialImage.setTexture(TUTORIAL_PAGES[currentPage]);
       _buildDescLines(currentPage);
-      nextLabel.setText(currentPage >= TOTAL_PAGES - 1 ? "Exit" : "Next");
+      nextLabel.setText(window.GD_T ? window.GD_T(currentPage >= TOTAL_PAGES - 1 ? "Exit" : "Next") : (currentPage >= TOTAL_PAGES - 1 ? "Exit" : "Next"));
     }
   });
   panelContainer.setScale(0);
