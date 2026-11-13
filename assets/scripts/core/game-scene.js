@@ -5383,7 +5383,7 @@ _buildPauseOverlay() {
     this._accountInputs.push(control);
     // The label sits just above the native field. Give it a real <label> hit
     // target so a mobile tap focuses the field through the browser itself.
-    control.addLabelProxy({ x: screenWidth / 2, y: 320 + y - 28, width: 440, height: 34 });
+    control.addLabelProxy({ x: screenWidth / 2, y: 320 + y - 3, width: 440, height: 60 });
     labelText.setInteractive({ useHandCursor: true });
     labelText.on("pointerdown", () => control.focus());
     labelText.on("pointerup", () => control.focus());
