@@ -5086,6 +5086,7 @@ _buildPauseOverlay() {
     if (options.inputMode) input.inputMode = options.inputMode;
     if (options.maxLength) input.maxLength = options.maxLength;
     input.setAttribute("aria-label", options.ariaLabel || options.placeholder || "Text");
+    input.className = "gd-native-input";
 
     const baseStyle = {
       position: "fixed",
@@ -5305,11 +5306,15 @@ _buildPauseOverlay() {
 
   _accountInput(label, y, options = {}) {
     const i18n = window.GD_T || (value => value);
+    const fieldBorder = this.textures.get("GJ_button01").source[0].width * 0.3;
+    const fieldBg = this.add.nineslice(0, y, "GJ_button01", null, 440, 44, fieldBorder, fieldBorder, fieldBorder, fieldBorder)
+      .setOrigin(0.5);
+    this._accountContent.add(fieldBg);
     const labelText = this.add.bitmapText(-210, y - 28, "bigFont", i18n(label), 23).setOrigin(0, 0.5);
     this._accountContent.add(labelText);
     const control = this._createTextInputOverlay({
-      x: 0,
-      y: y,
+      x: screenWidth / 2,
+      y: 320 + y,
       width: 440,
       height: 44,
       type: options.type || "text",
@@ -5319,6 +5324,18 @@ _buildPauseOverlay() {
       inputMode: options.inputMode,
       maxLength: options.maxLength,
       fontSize: 20,
+      transparent: true,
+      style: {
+        opacity: "1",
+        background: "transparent",
+        border: "0",
+        color: "#fff4bd",
+        caretColor: "#fff4bd",
+        WebkitTextFillColor: "#fff4bd",
+        textShadow: "0 2px 2px #2b1900",
+        fontWeight: "bold",
+        padding: "0 16px"
+      },
       onFocus: options.onFocus,
       onEnter: options.onEnter
     });

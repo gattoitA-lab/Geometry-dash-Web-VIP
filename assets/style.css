@@ -12,3 +12,14 @@ canvas {
   display: block;
   margin: 0 auto;
 }
+
+.gd-native-input::placeholder {
+  color: rgba(255, 244, 189, 0.62);
+  opacity: 1;
+  font-family: "Arial", sans-serif;
+  font-weight: bold;
+}
+
+.gd-native-input:focus {
+  outline: none;
+}
