@@ -2112,6 +2112,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         ariaLabel: "Search",
         maxLength: inputMaxLen,
         transparent: true,
+        ghost: true,
         onFocus: _focusInput,
         onBlur: _blurInput,
         onInput: (value) => {
@@ -5080,7 +5081,8 @@ _buildPauseOverlay() {
     if (options.inputMode) input.inputMode = options.inputMode;
     if (options.maxLength) input.maxLength = options.maxLength;
     input.setAttribute("aria-label", options.ariaLabel || options.placeholder || "Text");
-    input.className = "gd-native-input";
+    input.className = options.ghost ? "gd-native-input gd-native-input--ghost" : "gd-native-input";
+    input.id = `gd-native-input-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
 
     const baseStyle = {
       position: "fixed",
@@ -5092,10 +5094,15 @@ _buildPauseOverlay() {
       fontFamily: "Arial, sans-serif",
       outline: "none",
       appearance: "none",
-      WebkitAppearance: "none"
+      WebkitAppearance: "none",
+      touchAction: "manipulation",
+      userSelect: "text",
+      WebkitUserSelect: "text"
     };
     Object.assign(input.style, baseStyle, options.transparent ? {
-      opacity: "0.01",
+      // Keep the element fully present for mobile browsers. The visible text is
+      // rendered by Phaser, so only the text/caret is made transparent.
+      opacity: options.ghost ? "1" : "0.01",
       background: "transparent",
       border: "0",
       color: "transparent",
@@ -5123,7 +5130,26 @@ _buildPauseOverlay() {
       input.style.width = `${width * sx}px`;
       input.style.height = `${height * sy}px`;
       input.style.fontSize = `${Math.max(16, (options.fontSize || 20) * sy)}px`;
+      if (labelProxy && labelProxyRect) {
+        labelProxy.style.left = `${rect.left + ((labelProxyRect.x || 0) - (labelProxyRect.width || 440) / 2) * sx}px`;
+        labelProxy.style.top = `${rect.top + ((labelProxyRect.y || 0) - (labelProxyRect.height || 34) / 2) * sy}px`;
+        labelProxy.style.width = `${(labelProxyRect.width || 440) * sx}px`;
+        labelProxy.style.height = `${(labelProxyRect.height || 34) * sy}px`;
+      }
     };
+
+    let labelProxy = null;
+    let labelProxyRect = null;
+
+    const focusInput = () => {
+      try {
+        input.focus({ preventScroll: true });
+        if (input.setSelectionRange) input.setSelectionRange(input.value.length, input.value.length);
+      } catch (_) {}
+    };
+    // Real DOM input taps are the most reliable way to open the soft keyboard.
+    input.addEventListener("pointerdown", (event) => event.stopPropagation(), { passive: true });
+    input.addEventListener("touchend", focusInput, { passive: true });
 
     input.addEventListener("focus", () => {
       input.style.borderColor = "#ffffff";
@@ -5145,11 +5171,32 @@ _buildPauseOverlay() {
       focus() { input.focus(); },
       blur() { input.blur(); },
       position,
+      addLabelProxy: (rect) => {
+        if (labelProxy) return;
+        labelProxyRect = rect || {};
+        labelProxy = document.createElement("label");
+        labelProxy.htmlFor = input.id;
+        labelProxy.setAttribute("aria-hidden", "true");
+        Object.assign(labelProxy.style, {
+          position: "fixed",
+          zIndex: "2147483000",
+          display: "block",
+          opacity: "0.01",
+          background: "transparent",
+          cursor: "text",
+          touchAction: "manipulation"
+        });
+        document.body.appendChild(labelProxy);
+        position();
+      },
       onEnter: options.onEnter,
       destroy: () => {
         window.removeEventListener("resize", resize);
         window.removeEventListener("orientationchange", resize);
         if (visualViewport) visualViewport.removeEventListener("resize", resize);
+        if (labelProxy && labelProxy.parentNode) labelProxy.parentNode.removeChild(labelProxy);
+        labelProxy = null;
+        labelProxyRect = null;
         if (input.parentNode) input.parentNode.removeChild(input);
       }
     };
@@ -5334,7 +5381,11 @@ _buildPauseOverlay() {
       onEnter: options.onEnter
     });
     this._accountInputs.push(control);
+    // The label sits just above the native field. Give it a real <label> hit
+    // target so a mobile tap focuses the field through the browser itself.
+    control.addLabelProxy({ x: screenWidth / 2, y: 320 + y - 28, width: 440, height: 34 });
     labelText.setInteractive({ useHandCursor: true });
+    labelText.on("pointerdown", () => control.focus());
     labelText.on("pointerup", () => control.focus());
     return control;
   }
