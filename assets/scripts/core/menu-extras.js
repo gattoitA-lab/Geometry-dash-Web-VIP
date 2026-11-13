@@ -15,6 +15,11 @@
     { key: "instagram", name: "INSTAGRAM", frame: "gj_instaIcon_001.png", url: SOCIALS.instagram }
   ];
 
+  // Star values and demon levels of the 22 main levels. These are used only
+  // for levels that are actually completed by the player, never as fake data.
+  const MAIN_LEVEL_STARS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 10, 14, 12, 12, 10, 14, 10, 15, 10, 10];
+  const MAIN_DEMON_LEVELS = new Set(["level_14", "level_18", "level_20"]);
+
   const PANEL_TEXTURE = "square01_001";
 
   function readJson(key, fallback) {
@@ -688,6 +693,67 @@
   // ---------------------------------------------------------------------------
   // Profile / My Socials
   // ---------------------------------------------------------------------------
+  GameScene.prototype._gattoProfileStats = function () {
+    const completed = new Set();
+    const completedRaw = readJson("gd_completedSet", []);
+    if (Array.isArray(completedRaw)) {
+      for (const id of completedRaw) completed.add(String(id));
+    }
+
+    // Older saves may not have gd_completedSet yet; bestPercent is the source
+    // of truth used by the level-select screen, so include 100% levels too.
+    for (let i = 1; i <= 22; i++) {
+      const id = `level_${i}`;
+      if (parseFloat(localStorage.getItem(`bestPercent_${id}`) || "0") >= 100) {
+        completed.add(id);
+      }
+    }
+
+    const extra = readJson("gd_profile_levels", {});
+    let stars = 0;
+    let demons = 0;
+    let diamonds = 0;
+    for (const id of completed) {
+      const mainMatch = /^level_(\d+)$/.exec(id);
+      if (mainMatch) {
+        const index = parseInt(mainMatch[1], 10) - 1;
+        stars += MAIN_LEVEL_STARS[index] || 0;
+        if (MAIN_DEMON_LEVELS.has(id)) demons++;
+        continue;
+      }
+      const record = extra && extra[id];
+      if (!record) continue;
+      stars += Math.max(0, Number(record.stars) || 0);
+      diamonds += Math.max(0, Number(record.diamonds) || 0);
+      if (Number(record.difficulty) >= 6) demons++;
+    }
+
+    const completedCount = parseInt(localStorage.getItem("gd_completedLevels") || "0", 10) ||
+      (Array.isArray(completedRaw) ? completedRaw.length : 0);
+
+    return {
+      stars,
+      moons: 0,
+      diamonds,
+      coins: parseInt(localStorage.getItem("gd_totalsecretcoins") || "0", 10) || 0,
+      demons,
+      completed: completedCount
+    };
+  };
+
+  GameScene.prototype._recordProfileLevelStats = function (levelId) {
+    const selected = window._selectedLevelData;
+    if (!selected || selected.id === undefined) return;
+    if (String(selected.id) !== String(levelId)) return;
+    const map = readJson("gd_profile_levels", {});
+    map[String(levelId)] = {
+      stars: Math.max(0, Number(selected.stars) || 0),
+      diamonds: Math.max(0, Number(selected.diamonds) || 0),
+      difficulty: Number(selected.difficulty) || 0
+    };
+    writeJson("gd_profile_levels", map);
+  };
+
   GameScene.prototype._buildProfilePopup = function () {
     this._closeProfileOverlay && this._closeProfileOverlay();
     const panelData = this._gattoPanel(1000, 560, 0xffffff, null, "GJ_square01");
@@ -707,13 +773,15 @@
     });
     panel.add([socialsLabel, socialsHit]);
 
+    const profileStats = this._gattoProfileStats();
+    const formatStat = (value) => Number(value || 0).toLocaleString("en-US");
     const stats = [
-      ["GJ_starsIcon_001.png", "8,299"],
-      ["GJ_moonsIcon_001.png", "1,045"],
-      ["GJ_diamondsIcon_001.png", "119"],
-      ["GJ_coinsIcon_001.png", "1,056"],
-      ["GJ_demonIcon_001.png", "821"],
-      ["GJ_completesIcon_001.png", "4"]
+      ["GJ_starsIcon_001.png", formatStat(profileStats.stars)],
+      ["GJ_moonsIcon_001.png", formatStat(profileStats.moons)],
+      ["GJ_diamondsIcon_001.png", formatStat(profileStats.diamonds)],
+      ["GJ_coinsIcon_001.png", formatStat(profileStats.coins)],
+      ["GJ_demonIcon_001.png", formatStat(profileStats.demons)],
+      ["GJ_completesIcon_001.png", formatStat(profileStats.completed)]
     ];
     stats.forEach((entry, index) => {
       const x = -350 + index * 140;

@@ -310,7 +310,9 @@ window.AccountAPI = {
   collectLocalData() {
     const keys = [
       'gd_settings', 'gd_totalAttempts', 'gd_totalJumps', 'gd_totalDeaths',
-      'gd_completedLevels', 'created_levels', 'iconMainColor', 'iconSecondaryColor',
+      'gd_completedLevels', 'gd_completedSet', 'gd_profile_levels',
+      'gd_totalsecretcoins', 'gd_totalusercoins', 'created_levels',
+      'iconMainColor', 'iconSecondaryColor',
       'iconCurrentPlayer', 'iconCurrentShip', 'iconCurrentBall', 'iconCurrentWave',
       'iconCurrentSpider', 'iconCurrentBird', 'userMusicVol', 'userSfxVol',
       'menuMusicEnabled',
@@ -335,7 +337,9 @@ window.AccountAPI = {
     if (!save) return;
     const keys = [
       'gd_settings', 'gd_totalAttempts', 'gd_totalJumps', 'gd_totalDeaths',
-      'gd_completedLevels', 'created_levels', 'iconMainColor', 'iconSecondaryColor',
+      'gd_completedLevels', 'gd_completedSet', 'gd_profile_levels',
+      'gd_totalsecretcoins', 'gd_totalusercoins', 'created_levels',
+      'iconMainColor', 'iconSecondaryColor',
       'iconCurrentPlayer', 'iconCurrentShip', 'iconCurrentBall', 'iconCurrentWave',
       'iconCurrentSpider', 'iconCurrentBird', 'userMusicVol', 'userSfxVol',
       'menuMusicEnabled',

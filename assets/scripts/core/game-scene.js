@@ -9782,6 +9782,7 @@ _applyMirrorEffect() {
         window._completedLevels = completedSet.length;
         localStorage.setItem("gd_completedLevels", window._completedLevels);
       }
+      this._recordProfileLevelStats?.(levelId);
     } else {
       this._practiceBestPercent = 100;
       localStorage.setItem("practiceBestPercent_" + (window.currentlevel[2] || "level_1"), 100);
