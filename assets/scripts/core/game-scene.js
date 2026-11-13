@@ -2037,71 +2037,23 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       const innerBtn3 = this.add.image(innerBtnX + 231, innerBtnY, "GJ_GameSheet03", "GJ_longBtn07_001.png")
         .setScrollFactor(0).setDepth(105).setOrigin(0.5, 0.5).setInteractive();
       this._makeBouncyButton(innerBtn3, 1, () => {
-        inputText = "";
         searchKeyboardInput.setValue("");
-        _updateInputDisplay();
+        searchKeyboardInput.focus();
       });
 
-      const allowedChars = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      const inputMaxLen  = 64;
-      const inputCX      = innerPanelX + innerPanelW / 2;
-      const inputCY      = innerPanelY + innerPanelH / 2;
-
-      let inputText      = "";
-      let inputFocused   = false;
-      let cursorVisible  = false;
-      let cursorTimer    = null;
-      const placeholderLabel = this.add.bitmapText(inputCX - 5, inputCY, "bigFont", "Enter a level, user or id", 28)
-        .setScrollFactor(0).setDepth(106).setOrigin(0.5, 0.5)
-        .setTint(0x6c99d8).setAlpha(0.85);
-      const typedLabel = this.add.bitmapText(innerPanelX + 10, inputCY, "bigFont", "", 46)
-        .setScrollFactor(0).setDepth(106).setOrigin(0, 0.5)
-        .setTint(0xffffff).setVisible(false);
-      const inputCursor = this.add.text(0, inputCY, "|", {
-        fontSize: "33px", fontFamily: "Arial", color: "#92a7c0"
-      }).setScrollFactor(0).setDepth(106).setOrigin(0.5, 0.5).setVisible(false);
-
-      const _updateInputDisplay = () => {
-        if (inputText === "") {
-          typedLabel.setVisible(false);
-          placeholderLabel.setVisible(true);
-        } else {
-          placeholderLabel.setVisible(false);
-          typedLabel.setText(inputText).setVisible(true);
-        }
-        if (inputFocused) {
-          const textW = inputText === "" ? 0 : typedLabel.width;
-          const textLeft = innerPanelX + 10;
-          inputCursor.x = textLeft + textW + 2;
-          inputCursor.setVisible(cursorVisible);
-        } else {
-          inputCursor.setVisible(false);
+      const inputMaxLen = 64;
+      const sanitizeSearchText = (value) => String(value || "")
+        .replace(/[\u0000-\u001F\u007F]/g, "")
+        .slice(0, inputMaxLen);
+      const normalizeSearchQuery = (value) => {
+        const text = String(value || "");
+        try {
+          return text.normalize("NFD").replace(/[\u0300-\u036F]/g, "");
+        } catch (_) {
+          return text;
         }
       };
 
-      const _startCursorBlink = () => {
-        cursorVisible = true;
-        _updateInputDisplay();
-        if (cursorTimer) cursorTimer.remove();
-        cursorTimer = null;
-      };
-
-      const _stopCursorBlink = () => {
-        if (cursorTimer) { cursorTimer.remove(); cursorTimer = null; }
-        cursorVisible = false;
-        inputCursor.setVisible(false);
-      };
-
-      const _focusInput = () => {
-        inputFocused = true;
-        _startCursorBlink();
-      };
-
-      const _blurInput = () => {
-        inputFocused = false;
-        _stopCursorBlink();
-        _updateInputDisplay();
-      };
       const searchKeyboardInput = this._createTextInputOverlay({
         x: innerPanelX + innerPanelW / 2,
         y: innerPanelY + innerPanelH / 2,
@@ -2110,81 +2062,27 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         type: "text",
         placeholder: "Enter a level, user or id",
         ariaLabel: "Search",
+        autocomplete: "off",
+        enterKeyHint: "search",
         maxLength: inputMaxLen,
+        fontSize: 30,
         transparent: true,
-        ghost: true,
-        onFocus: _focusInput,
-        onBlur: _blurInput,
+        color: "#ffffff",
+        caretColor: "#9ed7ff",
+        padding: "0 14px",
+        style: { textAlign: "center" },
         onInput: (value) => {
-          const filtered = String(value || "").split('').filter(c => allowedChars.includes(c)).join('');
-          inputText = filtered.slice(0, inputMaxLen);
-          _updateInputDisplay();
+          const clean = sanitizeSearchText(value);
+          if (clean !== value) searchKeyboardInput.setValue(clean);
         },
         onEnter: () => _doSearch()
       });
 
-      const inputHitZone = this.add.zone(
-        innerPanelX + innerPanelW / 2, innerPanelY + innerPanelH / 2,
-        innerPanelW, innerPanelH
-      ).setScrollFactor(0).setDepth(107).setInteractive();
-      inputHitZone.on("pointerdown", () => {
-        _focusInput();
-        searchKeyboardInput.focus();
-      });
-
-      blocker.on("pointerdown", () => {
-        if (inputFocused) {
-          searchKeyboardInput.blur();
-          _blurInput();
-        }
-      });
-      const _onKeyDown = (event) => {
-        if (!inputFocused) return;
-        event.stopPropagation();
-        if (event.key === "Backspace") {
-          if (inputText.length > 0) {
-            inputText = inputText.slice(0, -1);
-            _updateInputDisplay();
-          }
-        } else if (event.key === "Enter") {
-          _doSearch();
-          } else if (event.ctrlKey || event.metaKey) {
-          if (event.key === "c" || event.key === "C") {
-            event.preventDefault();
-            navigator.clipboard.writeText(inputText);
-          } else if (event.key === "v" || event.key === "V") {
-            event.preventDefault();
-            navigator.clipboard.readText().then(pastedText => {
-              const filtered = pastedText.split('').filter(c => allowedChars.includes(c)).join('');
-              if (filtered.length > 0) {
-                const availableSpace = inputMaxLen - inputText.length;
-                inputText += filtered.slice(0, availableSpace);
-                _updateInputDisplay();
-              }
-            }).catch(() => {});
-          } else if (event.key === "a" || event.key === "A") {
-            event.preventDefault();
-          }
-        } else if (event.key.length === 1 && allowedChars.includes(event.key) && !event.ctrlKey) {
-          if (inputText.length < inputMaxLen) {
-            inputText += event.key;
-            _updateInputDisplay();
-          }
-        }
-      };
+      blocker.on("pointerdown", () => searchKeyboardInput.blur());
       const htmlInput = {
-        remove: () => {
-          window.removeEventListener("keyup", _onKeyUpStop);
-          window.removeEventListener("keypress", _onKeyPressStop);
-          searchKeyboardInput.destroy();
-          _blurInput();
-        },
-        get value() { return inputText; },
+        remove: () => searchKeyboardInput.destroy(),
+        get value() { return sanitizeSearchText(searchKeyboardInput.value); },
       };
-      const _onKeyUpStop = (e) => e.stopPropagation();
-      const _onKeyPressStop = (e) => e.stopPropagation();
-      window.addEventListener("keyup", _onKeyUpStop);
-      window.addEventListener("keypress", _onKeyPressStop);
       const _repositionInput = () => {};
       const qsLabelY  = sh * 0.195;
       const qsPanelY  = qsLabelY + 25;
@@ -2500,7 +2398,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       _refreshServerButtons();
 
       this._searchOverlayObjects.push(gfx, qsLabel, filtersLabel, cornerBR, cornerBL,
-        placeholderLabel, typedLabel, inputCursor, inputHitZone, innerBtn1, innerBtn2, innerBtn3,
+        innerBtn1, innerBtn2, innerBtn3,
         serverLabel, serverRobtopBtn, serverGDWebBtn);
 
       let _loading = false;
@@ -2515,7 +2413,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       };
       const _doSearch = async () => {
         if (_loading) return;
-        const rawInput = htmlInput.value.trim();
+        const rawInput = normalizeSearchQuery(htmlInput.value).trim();
         if (rawInput && /^\d+$/.test(rawInput)) {
           const levelId = rawInput;
           _loading = true;
@@ -5081,12 +4979,16 @@ _buildPauseOverlay() {
     if (options.inputMode) input.inputMode = options.inputMode;
     if (options.maxLength) input.maxLength = options.maxLength;
     input.setAttribute("aria-label", options.ariaLabel || options.placeholder || "Text");
-    input.className = options.ghost ? "gd-native-input gd-native-input--ghost" : "gd-native-input";
+    if (options.enterKeyHint) input.setAttribute("enterkeyhint", options.enterKeyHint);
+    input.className = "gd-native-input";
     input.id = `gd-native-input-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
 
     const baseStyle = {
       position: "fixed",
       zIndex: "2147483000",
+      display: "block",
+      pointerEvents: "auto",
+      opacity: "1",
       boxSizing: "border-box",
       margin: "0",
       padding: "0 12px",
@@ -5100,15 +5002,17 @@ _buildPauseOverlay() {
       WebkitUserSelect: "text"
     };
     Object.assign(input.style, baseStyle, options.transparent ? {
-      // Keep the element fully present for mobile browsers. The visible text is
-      // rendered by Phaser, so only the text/caret is made transparent.
-      opacity: options.ghost ? "1" : "0.01",
+      // This is a real, visible text field. Mobile browsers are much more
+      // reliable about opening the keyboard when the tapped input is visible.
+      opacity: "1",
       background: "transparent",
       border: "0",
-      color: "transparent",
-      caretColor: "transparent",
-      padding: "0",
-      fontSize: "16px"
+      color: options.color || "#ffffff",
+      caretColor: options.caretColor || options.color || "#ffffff",
+      WebkitTextFillColor: options.color || "#ffffff",
+      padding: options.padding || "0 12px",
+      fontSize: "16px",
+      fontWeight: options.fontWeight || "bold"
     } : {
       background: "rgba(0, 20, 58, 0.94)",
       border: "3px solid #4aa8ff",
@@ -5143,13 +5047,31 @@ _buildPauseOverlay() {
 
     const focusInput = () => {
       try {
+        const wasFocused = document.activeElement === input;
         input.focus({ preventScroll: true });
-        if (input.setSelectionRange) input.setSelectionRange(input.value.length, input.value.length);
+        if (!wasFocused && input.setSelectionRange) {
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
       } catch (_) {}
     };
-    // Real DOM input taps are the most reliable way to open the soft keyboard.
-    input.addEventListener("pointerdown", (event) => event.stopPropagation(), { passive: true });
+    // The native touch/pointer event is the only reliable moment to focus a
+    // field on iOS and Android. Phaser callbacks run later, after the gesture.
+    const onFieldTouch = (event) => {
+      event.stopPropagation();
+      focusInput();
+    };
+    input.addEventListener("pointerdown", onFieldTouch, { passive: true });
+    input.addEventListener("touchstart", onFieldTouch, { passive: true });
     input.addEventListener("touchend", focusInput, { passive: true });
+    input.addEventListener("click", focusInput);
+    // Keep Phaser's window-level keyboard handlers (W/A/S/D, space, etc.)
+    // from cancelling characters typed into this real input.
+    const stopGameKeyboard = (event) => event.stopPropagation();
+    input.addEventListener("keydown", stopGameKeyboard);
+    input.addEventListener("keypress", stopGameKeyboard);
+    input.addEventListener("keyup", stopGameKeyboard);
+    input.addEventListener("beforeinput", stopGameKeyboard);
+    input.addEventListener("input", stopGameKeyboard);
 
     input.addEventListener("focus", () => {
       input.style.borderColor = "#ffffff";
@@ -5204,10 +5126,14 @@ _buildPauseOverlay() {
     };
 
     input.addEventListener("keydown", (event) => {
+      if (event.isComposing) return;
       if (event.key === "Enter") {
         event.preventDefault();
         const handler = control.onEnter;
         if (handler) handler(input.value);
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        input.blur();
       }
     });
 
@@ -5359,33 +5285,29 @@ _buildPauseOverlay() {
       x: screenWidth / 2,
       y: 320 + y,
       width: 440,
-      height: 44,
+      height: 60,
       type: options.type || "text",
       placeholder: i18n(label),
       ariaLabel: i18n(label),
       autocomplete: options.autocomplete || "off",
+      enterKeyHint: "done",
       inputMode: options.inputMode,
       maxLength: options.maxLength,
       fontSize: 20,
       transparent: true,
+      color: "#fff4bd",
+      caretColor: "#fff4bd",
+      padding: "0 16px",
       style: {
-        opacity: "1",
-        background: "transparent",
-        border: "0",
-        color: "#fff4bd",
-        caretColor: "#fff4bd",
-        WebkitTextFillColor: "#fff4bd",
         textShadow: "0 2px 2px #2b1900",
-        fontWeight: "bold",
-        padding: "0 16px"
+        fontWeight: "bold"
       },
       onFocus: options.onFocus,
       onEnter: options.onEnter
     });
     this._accountInputs.push(control);
-    // The label sits just above the native field. Give it a real <label> hit
-    // target so a mobile tap focuses the field through the browser itself.
-    control.addLabelProxy({ x: screenWidth / 2, y: 320 + y - 3, width: 440, height: 60 });
+    // The native field itself covers the label area and opens the keyboard on
+    // touch. A Phaser callback would run too late for mobile browsers.
     labelText.setInteractive({ useHandCursor: true });
     labelText.on("pointerdown", () => control.focus());
     labelText.on("pointerup", () => control.focus());

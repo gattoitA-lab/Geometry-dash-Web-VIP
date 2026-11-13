@@ -17,22 +17,16 @@ canvas {
   touch-action: manipulation;
   -webkit-user-select: text;
   user-select: text;
+  -webkit-tap-highlight-color: transparent;
+  font-weight: bold;
+  pointer-events: auto;
 }
 
 .gd-native-input::placeholder {
-  color: rgba(255, 244, 189, 0.62);
+  color: rgba(255, 255, 255, 0.55);
   opacity: 1;
   font-family: "Arial", sans-serif;
   font-weight: bold;
-}
-
-.gd-native-input--ghost {
-  color: transparent !important;
-  caret-color: transparent !important;
-}
-
-.gd-native-input--ghost::placeholder {
-  color: transparent !important;
 }
 
 .gd-native-input:focus {
