@@ -5186,6 +5186,8 @@ _buildPauseOverlay() {
           cursor: "text",
           touchAction: "manipulation"
         });
+        labelProxy.addEventListener("click", focusInput);
+        labelProxy.addEventListener("touchend", focusInput, { passive: true });
         document.body.appendChild(labelProxy);
         position();
       },
