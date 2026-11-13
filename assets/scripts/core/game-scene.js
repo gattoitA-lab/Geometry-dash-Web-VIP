@@ -2132,8 +2132,14 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         searchKeyboardInput.blur();
         _blurInput();
       });
+      let searchTapButton = null;
+      let searchTapCleanup = () => {};
       const htmlInput = {
-        remove: () => searchKeyboardInput.destroy(),
+        remove: () => {
+          searchKeyboardInput.destroy();
+          searchTapCleanup();
+          searchTapCleanup = () => {};
+        },
         get value() { return sanitizeSearchText(searchKeyboardInput.value); },
       };
       const _repositionInput = () => {};
@@ -2492,6 +2498,84 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         }
         this._openOnlineLevelsScene(searchParams);
       };
+
+      // Phaser waits for pointerup for its buttons. On mobile the keyboard can
+      // close and resize the canvas between down and up, so that release never
+      // lands on the green search button. A transparent native button over it
+      // makes the tap immediate and reliable on touch screens and desktops.
+      const _installSearchTapProxy = () => {
+        if (searchTapButton) return;
+        searchTapButton = document.createElement("button");
+        searchTapButton.type = "button";
+        searchTapButton.tabIndex = -1;
+        searchTapButton.setAttribute("aria-label", "Search levels");
+        Object.assign(searchTapButton.style, {
+          position: "fixed",
+          zIndex: "2147483001",
+          display: "block",
+          margin: "0",
+          padding: "0",
+          border: "0",
+          background: "transparent",
+          opacity: "0.01",
+          cursor: "pointer",
+          touchAction: "manipulation",
+          WebkitTapHighlightColor: "transparent"
+        });
+        const position = () => {
+          const canvas = this.game && this.game.canvas;
+          if (!canvas || !searchTapButton) return;
+          const rect = canvas.getBoundingClientRect();
+          if (!rect.width || !rect.height) return;
+          const sx = rect.width / screenWidth;
+          const sy = rect.height / screenHeight;
+          const width = Math.max(44, 92 * sx);
+          const height = Math.max(44, innerPanelH * sy);
+          const fieldRight = rect.left + (innerPanelX + innerPanelW) * sx;
+          const cx = Math.max(
+            rect.left + (innerBtnX + 47) * sx,
+            fieldRight + width / 2 + 2
+          );
+          const cy = rect.top + innerBtnY * sy;
+          searchTapButton.style.left = `${cx - width / 2}px`;
+          searchTapButton.style.top = `${cy - height / 2}px`;
+          searchTapButton.style.width = `${width}px`;
+          searchTapButton.style.height = `${height}px`;
+        };
+        let lastActivation = 0;
+        const activate = (event) => {
+          if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          const now = Date.now();
+          if (now - lastActivation < 800) return;
+          lastActivation = now;
+          _doSearch();
+        };
+        searchTapButton.addEventListener("pointerdown", activate, { passive: false });
+        searchTapButton.addEventListener("touchstart", activate, { passive: false });
+        searchTapButton.addEventListener("click", activate);
+        const onResize = () => position();
+        const visualViewport = window.visualViewport;
+        window.addEventListener("resize", onResize);
+        window.addEventListener("orientationchange", onResize);
+        if (visualViewport) visualViewport.addEventListener("resize", onResize);
+        searchTapCleanup = () => {
+          window.removeEventListener("resize", onResize);
+          window.removeEventListener("orientationchange", onResize);
+          if (visualViewport) visualViewport.removeEventListener("resize", onResize);
+          if (searchTapButton && searchTapButton.parentNode) {
+            searchTapButton.parentNode.removeChild(searchTapButton);
+          }
+          searchTapButton = null;
+        };
+        document.body.appendChild(searchTapButton);
+        position();
+        setTimeout(position, 50);
+      };
+      _installSearchTapProxy();
+
       const _doSearchInner = async (levelId) => {
         const PROXY_BASE = (window._gdProxyUrl || "").replace(/\/$/, "");
         if (!PROXY_BASE) { console.warn("Level search: window._gdProxyUrl is not configured"); return; }
