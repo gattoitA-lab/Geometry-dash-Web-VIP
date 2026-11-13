@@ -539,21 +539,14 @@ class GameScene extends Phaser.Scene {
       {frame:  "",                       url: "",                                                     angle: 0,                row: 0, col: 2 },
       {frame:  "",                       url: "",                                                     angle: 0,                row: 0, col: 3 },
 
-      { frame: "gj_twIcon_001.png",      url: "https://x.com/rohanis0000gd",                          angle: 0, flipX: false, row: 1, col: 0 },
-      { frame: "gj_ytIcon_001.png",      url: "https://www.youtube.com/@rohanis0000gd",               angle: 0,                row: 1, col: 1 },
-      { frame: "gj_tiktokIcon_001.png",  url: "https://www.tiktok.com/@rohanis00000",                 angle: 0, flipX: false, row: 1, col: 2 },
-      { frame: "gj_githubIcon_001.png",  url: "https://github.com/web-dashers/web-dashers.github.io", angle: 0,                row: 1, col: 3 },
+      { frame: "gj_ytIcon_001.png",      url: "https://www.youtube.com/@gattoitalianoGD",             angle: 0,                row: 1, col: 0 },
+      { frame: "gj_tiktokIcon_001.png",  url: "https://www.tiktok.com/@gatto.italiano7",              angle: 0,                row: 1, col: 1 },
+      { frame: "gj_instaIcon_001.png",   url: "https://www.instagram.com/gatt0italian0/",             angle: 0,                row: 1, col: 2 },
 
       {frame:  "",                       url: "",                                                     angle: 0,                row: 2, col: 0 },
       {frame:  "",                       url: "",                                                     angle: 0,                row: 2, col: 1 },
       {frame:  "",                       url: "",                                                     angle: 0,                row: 2, col: 2 },
-      { frame: "gj_discordIcon_001.png", url: "https://discord.gg/TfEzAVWPSJ",                        angle: 0,               row: 2, col: 3 },
-
-
-      //{ frame: "gj_instaIcon_001.png",   url: "https://www.instagram.com/",                           angle: -90, flipX: true, row: 1, col: 3 },
-      //{ frame: "gj_twitchIcon_001.png",  url: "https://www.twitch.tv/",                               angle: -90, flipX: true, row: 0, col: 0 },
-      //{ frame: "gj_fbIcon_001.png",      url: "https://www.facebook.com/",                            angle: 0,                row: 0, col: 0 },
-      //{ frame: "gj_rdIcon_001.png",      url: "https://www.reddit.com/r/geometrydash/",               angle: -90, flipX: true, row: 0, col: 0 },
+      {frame:  "",                       url: "",                                                     angle: 0,                row: 2, col: 3 },
 
     ];
     const _socialScale = 0.75;
@@ -3700,6 +3693,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
   if (this._lvlEditDecor) this._lvlEditDecor.destroy();
   this._lvlEditDecor = this.add.image(this._creatorBtn.x + 110, this._creatorBtn.y - (this._creatorBtn.height * this._creatorBtn.scaleY) / 2 + 160, "GJ_GameSheet03", "GJ_lvlEdit_001.png").setScrollFactor(0).setDepth(31);
 }
+    this._buildGattoMenuExtras();
     this._spaceWasDown = false;
     this._spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this._upKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
@@ -7667,6 +7661,27 @@ _showwippopup() {
       }
       this._socialIcons = [];
     }
+    this._closeDailyRewards?.();
+    this._closeFreeRewards?.();
+    this._closeProfileOverlay?.();
+    this._closeAccountSettings?.();
+    this._closeSocialLinks?.();
+    this._clearMenuBgIcon?.();
+    if (this._menuBgSpawnEvent) {
+      this._menuBgSpawnEvent.remove(false);
+      this._menuBgSpawnEvent = null;
+    }
+    if (this._menuDailyBtn) {
+      this._menuDailyBtn.destroy();
+      this._menuDailyBtn = null;
+    }
+    if (this._menuProfileGroup) {
+      this._menuProfileGroup.destroy(true);
+      this._menuProfileGroup = null;
+      this._menuProfileBtn = null;
+      this._menuProfileName = null;
+    }
+    this._gattoMenuExtrasBuilt = false;
     _dismiss(this._logo, { y: this._logo ? -this._logo.height : 0, duration: 300, ease: "Quad.In" }, () => {
       this._logo.destroy();
       this._logo = null;
@@ -7965,6 +7980,7 @@ _showwippopup() {
         icon.y = _originY + _layout[i].row * _iconSpacing;
       });
     }
+    this._layoutGattoMenuExtras?.();
   }
   _positionAttemptsLabel() {
     let _0xdbdd91 = this._cameraX + screenWidth / 2;
