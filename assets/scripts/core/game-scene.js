@@ -2037,7 +2037,9 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       const innerBtn3 = this.add.image(innerBtnX + 231, innerBtnY, "GJ_GameSheet03", "GJ_longBtn07_001.png")
         .setScrollFactor(0).setDepth(105).setOrigin(0.5, 0.5).setInteractive();
       this._makeBouncyButton(innerBtn3, 1, () => {
+        inputText = "";
         searchKeyboardInput.setValue("");
+        _updateInputDisplay();
         searchKeyboardInput.focus();
       });
 
@@ -2054,9 +2056,55 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         }
       };
 
+      const inputCX = innerPanelX + innerPanelW / 2;
+      const inputCY = innerPanelY + innerPanelH / 2;
+      let inputText = "";
+      let inputFocused = false;
+      let cursorVisible = false;
+
+      const placeholderLabel = this.add.bitmapText(inputCX - 5, inputCY, "bigFont", "Enter a level, user or id", 28)
+        .setScrollFactor(0).setDepth(106).setOrigin(0.5, 0.5)
+        .setTint(0x6c99d8).setAlpha(0.85);
+      const typedLabel = this.add.bitmapText(innerPanelX + 10, inputCY, "bigFont", "", 46)
+        .setScrollFactor(0).setDepth(106).setOrigin(0, 0.5)
+        .setTint(0xffffff).setVisible(false);
+      const inputCursor = this.add.text(0, inputCY, "|", {
+        fontSize: "33px", fontFamily: "Arial", color: "#92a7c0"
+      }).setScrollFactor(0).setDepth(106).setOrigin(0.5, 0.5).setVisible(false);
+
+      const _updateInputDisplay = () => {
+        if (inputText === "") {
+          typedLabel.setVisible(false);
+          placeholderLabel.setVisible(true);
+        } else {
+          placeholderLabel.setVisible(false);
+          typedLabel.setText(inputText).setVisible(true);
+        }
+        if (inputFocused) {
+          const textW = inputText === "" ? 0 : typedLabel.width;
+          inputCursor.x = innerPanelX + 10 + textW + 2;
+          inputCursor.setVisible(cursorVisible);
+        } else {
+          inputCursor.setVisible(false);
+        }
+      };
+
+      const _focusInput = () => {
+        inputFocused = true;
+        cursorVisible = true;
+        _updateInputDisplay();
+      };
+
+      const _blurInput = () => {
+        inputFocused = false;
+        cursorVisible = false;
+        inputCursor.setVisible(false);
+        _updateInputDisplay();
+      };
+
       const searchKeyboardInput = this._createTextInputOverlay({
-        x: innerPanelX + innerPanelW / 2,
-        y: innerPanelY + innerPanelH / 2,
+        x: inputCX,
+        y: inputCY,
         width: innerPanelW,
         height: innerPanelH,
         type: "text",
@@ -2067,18 +2115,23 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         maxLength: inputMaxLen,
         fontSize: 30,
         transparent: true,
-        color: "#ffffff",
-        caretColor: "#9ed7ff",
-        padding: "0 14px",
-        style: { textAlign: "center" },
+        ghost: true,
+        onFocus: _focusInput,
+        onBlur: _blurInput,
         onInput: (value) => {
           const clean = sanitizeSearchText(value);
           if (clean !== value) searchKeyboardInput.setValue(clean);
+          inputText = clean;
+          cursorVisible = true;
+          _updateInputDisplay();
         },
         onEnter: () => _doSearch()
       });
 
-      blocker.on("pointerdown", () => searchKeyboardInput.blur());
+      blocker.on("pointerdown", () => {
+        searchKeyboardInput.blur();
+        _blurInput();
+      });
       const htmlInput = {
         remove: () => searchKeyboardInput.destroy(),
         get value() { return sanitizeSearchText(searchKeyboardInput.value); },
@@ -2398,7 +2451,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       _refreshServerButtons();
 
       this._searchOverlayObjects.push(gfx, qsLabel, filtersLabel, cornerBR, cornerBL,
-        innerBtn1, innerBtn2, innerBtn3,
+        placeholderLabel, typedLabel, inputCursor, innerBtn1, innerBtn2, innerBtn3,
         serverLabel, serverRobtopBtn, serverGDWebBtn);
 
       let _loading = false;
@@ -4980,7 +5033,7 @@ _buildPauseOverlay() {
     if (options.maxLength) input.maxLength = options.maxLength;
     input.setAttribute("aria-label", options.ariaLabel || options.placeholder || "Text");
     if (options.enterKeyHint) input.setAttribute("enterkeyhint", options.enterKeyHint);
-    input.className = "gd-native-input";
+    input.className = options.ghost ? "gd-native-input gd-native-input--ghost" : "gd-native-input";
     input.id = `gd-native-input-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
 
     const baseStyle = {
@@ -5002,14 +5055,14 @@ _buildPauseOverlay() {
       WebkitUserSelect: "text"
     };
     Object.assign(input.style, baseStyle, options.transparent ? {
-      // This is a real, visible text field. Mobile browsers are much more
-      // reliable about opening the keyboard when the tapped input is visible.
+      // A ghost field keeps the native element visible to the browser (so the
+      // touch keyboard opens) while Phaser draws the actual text above it.
       opacity: "1",
-      background: "transparent",
+      background: options.ghost ? "rgba(0, 0, 0, 0.001)" : "transparent",
       border: "0",
-      color: options.color || "#ffffff",
-      caretColor: options.caretColor || options.color || "#ffffff",
-      WebkitTextFillColor: options.color || "#ffffff",
+      color: options.ghost ? "transparent" : (options.color || "#ffffff"),
+      caretColor: options.ghost ? "transparent" : (options.caretColor || options.color || "#ffffff"),
+      WebkitTextFillColor: options.ghost ? "transparent" : (options.color || "#ffffff"),
       padding: options.padding || "0 12px",
       fontSize: "16px",
       fontWeight: options.fontWeight || "bold"

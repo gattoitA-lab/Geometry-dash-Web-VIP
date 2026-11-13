@@ -23,10 +23,25 @@ canvas {
 }
 
 .gd-native-input::placeholder {
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 244, 189, 0.62);
   opacity: 1;
   font-family: "Arial", sans-serif;
   font-weight: bold;
+}
+
+.gd-native-input--ghost {
+  color: transparent !important;
+  caret-color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.gd-native-input--ghost::placeholder {
+  color: transparent !important;
+}
+
+.gd-native-input--ghost::selection {
+  background: transparent;
+  color: transparent;
 }
 
 .gd-native-input:focus {
