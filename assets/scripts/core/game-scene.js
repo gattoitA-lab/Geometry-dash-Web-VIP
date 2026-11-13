@@ -2043,7 +2043,11 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       
       const innerBtn3 = this.add.image(innerBtnX + 231, innerBtnY, "GJ_GameSheet03", "GJ_longBtn07_001.png")
         .setScrollFactor(0).setDepth(105).setOrigin(0.5, 0.5).setInteractive();
-      this._makeBouncyButton(innerBtn3, 1, () => { inputText = ""; _updateInputDisplay(); });
+      this._makeBouncyButton(innerBtn3, 1, () => {
+        inputText = "";
+        searchKeyboardInput.setValue("");
+        _updateInputDisplay();
+      });
 
       const allowedChars = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
       const inputMaxLen  = 64;
@@ -2105,13 +2109,41 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         _stopCursorBlink();
         _updateInputDisplay();
       };
+      const searchKeyboardInput = this._createTextInputOverlay({
+        x: innerPanelX + innerPanelW / 2,
+        y: innerPanelY + innerPanelH / 2,
+        width: innerPanelW,
+        height: innerPanelH,
+        type: "text",
+        placeholder: "Enter a level, user or id",
+        ariaLabel: "Search",
+        maxLength: inputMaxLen,
+        transparent: true,
+        onFocus: _focusInput,
+        onBlur: _blurInput,
+        onInput: (value) => {
+          const filtered = String(value || "").split('').filter(c => allowedChars.includes(c)).join('');
+          inputText = filtered.slice(0, inputMaxLen);
+          _updateInputDisplay();
+        },
+        onEnter: () => _doSearch()
+      });
+
       const inputHitZone = this.add.zone(
         innerPanelX + innerPanelW / 2, innerPanelY + innerPanelH / 2,
         innerPanelW, innerPanelH
       ).setScrollFactor(0).setDepth(107).setInteractive();
-      inputHitZone.on("pointerdown", () => _focusInput());
+      inputHitZone.on("pointerdown", () => {
+        _focusInput();
+        searchKeyboardInput.focus();
+      });
 
-      blocker.on("pointerdown", () => { if (inputFocused) _blurInput(); });
+      blocker.on("pointerdown", () => {
+        if (inputFocused) {
+          searchKeyboardInput.blur();
+          _blurInput();
+        }
+      });
       const _onKeyDown = (event) => {
         if (!inputFocused) return;
         event.stopPropagation();
@@ -2146,25 +2178,17 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
           }
         }
       };
-      window.addEventListener("keydown", _onKeyDown);
-
       const htmlInput = {
         remove: () => {
-          window.removeEventListener("keydown", _onKeyDown);
-          window.removeEventListener("keydown", _onEnterKeydown);
           window.removeEventListener("keyup", _onKeyUpStop);
           window.removeEventListener("keypress", _onKeyPressStop);
+          searchKeyboardInput.destroy();
           _blurInput();
         },
         get value() { return inputText; },
       };
-      const _onEnterKeydown = (e) => {
-        if (e.key === "Enter") _doSearch();
-        e.stopPropagation();
-      };
       const _onKeyUpStop = (e) => e.stopPropagation();
       const _onKeyPressStop = (e) => e.stopPropagation();
-      window.addEventListener("keydown", _onEnterKeydown);
       window.addEventListener("keyup", _onKeyUpStop);
       window.addEventListener("keypress", _onKeyPressStop);
       const _repositionInput = () => {};
@@ -3756,6 +3780,10 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         this._closeLevelSelect();
         return;
       }
+      if (this._accountPopup) {
+        this._closeAccountPopup();
+        return;
+      }
       if (this._iconOverlay) {
         this._closeIconSelector();
         return;
@@ -5046,7 +5074,443 @@ _buildPauseOverlay() {
         localStorage.setItem("userSfxVol", v);
     });
  }
-_buildSettingsPopup(initialPage = 0) {
+  _createTextInputOverlay(options = {}) {
+    const input = document.createElement("input");
+    input.type = options.type || "text";
+    input.value = options.value || "";
+    input.placeholder = options.placeholder || "";
+    input.autocomplete = options.autocomplete || "off";
+    input.autocapitalize = options.autocapitalize || "none";
+    input.autocorrect = "off";
+    input.spellcheck = false;
+    if (options.inputMode) input.inputMode = options.inputMode;
+    if (options.maxLength) input.maxLength = options.maxLength;
+    input.setAttribute("aria-label", options.ariaLabel || options.placeholder || "Text");
+
+    const baseStyle = {
+      position: "fixed",
+      zIndex: "2147483000",
+      boxSizing: "border-box",
+      margin: "0",
+      padding: "0 12px",
+      borderRadius: "9px",
+      fontFamily: "Arial, sans-serif",
+      outline: "none",
+      appearance: "none",
+      WebkitAppearance: "none"
+    };
+    Object.assign(input.style, baseStyle, options.transparent ? {
+      opacity: "0.01",
+      background: "transparent",
+      border: "0",
+      color: "transparent",
+      caretColor: "transparent",
+      padding: "0",
+      fontSize: "16px"
+    } : {
+      background: "rgba(0, 20, 58, 0.94)",
+      border: "3px solid #4aa8ff",
+      color: "#ffffff",
+      caretColor: "#ffffff"
+    }, options.style || {});
+
+    const position = () => {
+      const canvas = this.game && this.game.canvas;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const sx = rect.width / screenWidth;
+      const sy = rect.height / screenHeight;
+      const width = options.width || 420;
+      const height = options.height || 44;
+      input.style.left = `${rect.left + ((options.x || 0) - width / 2) * sx}px`;
+      input.style.top = `${rect.top + ((options.y || 0) - height / 2) * sy}px`;
+      input.style.width = `${width * sx}px`;
+      input.style.height = `${height * sy}px`;
+      input.style.fontSize = `${Math.max(16, (options.fontSize || 20) * sy)}px`;
+    };
+
+    input.addEventListener("focus", () => {
+      input.style.borderColor = "#ffffff";
+      if (options.onFocus) options.onFocus();
+    });
+    input.addEventListener("blur", () => {
+      input.style.borderColor = "#4aa8ff";
+      if (options.onBlur) options.onBlur();
+    });
+    input.addEventListener("input", () => {
+      if (options.onInput) options.onInput(input.value);
+    });
+    const resize = () => position();
+    const visualViewport = window.visualViewport;
+    const control = {
+      el: input,
+      get value() { return input.value; },
+      setValue(value) { input.value = value; },
+      focus() { input.focus(); },
+      blur() { input.blur(); },
+      position,
+      onEnter: options.onEnter,
+      destroy: () => {
+        window.removeEventListener("resize", resize);
+        window.removeEventListener("orientationchange", resize);
+        if (visualViewport) visualViewport.removeEventListener("resize", resize);
+        if (input.parentNode) input.parentNode.removeChild(input);
+      }
+    };
+
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        const handler = control.onEnter;
+        if (handler) handler(input.value);
+      }
+    });
+
+    window.addEventListener("resize", resize);
+    window.addEventListener("orientationchange", resize);
+    if (visualViewport) visualViewport.addEventListener("resize", resize);
+
+    document.body.appendChild(input);
+    position();
+    setTimeout(position, 50);
+
+    return control;
+  }
+
+  _buildAccountPopup() {
+    if (this._accountPopup) return;
+
+    const i18n = window.GD_T || (value => value);
+    const centerX = screenWidth / 2;
+    const centerY = 320;
+    const panelWidth = 800;
+    const panelHeight = 550;
+    this._accountInputs = [];
+    this._accountView = window.AccountAPI && window.AccountAPI.currentUser ? "account" : "landing";
+    this._accountPopup = this.add.container(0, 0).setScrollFactor(0).setDepth(260);
+
+    const dim = this.add.rectangle(centerX, centerY, screenWidth, screenHeight, 0, 160 / 255).setInteractive();
+    this._accountPopup.add(dim);
+
+    const innerContainer = this.add.container(centerX, centerY).setScale(0);
+    this._accountPopup.add(innerContainer);
+    this._accountInner = innerContainer;
+
+    const corner = 0.325 * this.textures.get("GJ_square01").source[0].width;
+    const panel = this._drawScale9(0, 0, panelWidth, panelHeight, "GJ_square01", corner, 16777215, 1);
+    innerContainer.add(panel);
+
+    const closeBtn = this.add.image(-(panelWidth / 2) + 10, -(panelHeight / 2) + 10, "GJ_WebSheet", "GJ_closeBtn_001.png")
+      .setScale(0.8).setInteractive();
+    innerContainer.add(closeBtn);
+    this._makeBouncyButton(closeBtn, 0.8, () => this._closeAccountPopup());
+
+    this._accountTitle = this.add.bitmapText(0, -(panelHeight / 2) + 46, "bigFont", i18n("Account"), 42).setOrigin(0.5);
+    innerContainer.add(this._accountTitle);
+    this._accountContent = this.add.container(0, 0);
+    innerContainer.add(this._accountContent);
+
+    this.tweens.add({
+      targets: innerContainer,
+      scale: { from: 0, to: 1 },
+      duration: 420,
+      ease: "Back.Out"
+    });
+
+    this._renderAccountContent();
+    if (window.AccountAPI && !window.AccountAPI.currentUser && window.AccountAPI.checkSession) {
+      window.AccountAPI.checkSession().then(user => {
+        if (!user || !this._accountPopup) return;
+        if (this._accountView === "landing") {
+          this._accountView = "account";
+          this._renderAccountContent();
+        }
+      }).catch(() => {});
+    }
+
+    this.events.once("shutdown", () => this._closeAccountPopup());
+  }
+
+  _closeAccountPopup() {
+    if (this._accountInputs) {
+      for (const control of this._accountInputs) {
+        if (control && control.destroy) control.destroy();
+      }
+      this._accountInputs = [];
+    }
+    if (this._accountPopup) {
+      this._accountPopup.destroy();
+      this._accountPopup = null;
+    }
+    this._accountContent = null;
+    this._accountInner = null;
+  }
+
+  _clearAccountContent() {
+    if (this._accountInputs) {
+      for (const control of this._accountInputs) {
+        if (control && control.destroy) control.destroy();
+      }
+    }
+    this._accountInputs = [];
+    if (this._accountContent) this._accountContent.removeAll(true);
+    this._accountStatus = null;
+    this._accountBusy = false;
+  }
+
+  _renderAccountContent() {
+    if (!this._accountContent) return;
+    this._clearAccountContent();
+    const user = window.AccountAPI && window.AccountAPI.currentUser;
+    if (this._accountView === "login") {
+      this._buildAccountLogin();
+    } else if (this._accountView === "register") {
+      this._buildAccountRegister();
+    } else if (user) {
+      this._buildAccountProfile();
+    } else {
+      this._accountView = "landing";
+      this._buildAccountLanding();
+    }
+  }
+
+  _accountButton(x, y, label, width, callback) {
+    const i18n = window.GD_T || (value => value);
+    const border = this.textures.get("GJ_button01").source[0].width * 0.3;
+    const group = this.add.container(x, y);
+    const background = this.add.nineslice(0, 0, "GJ_button01", null, width, 56, border, border, border, border)
+      .setOrigin(0.5);
+    const text = this.add.bitmapText(0, -4, "goldFont", i18n(label), label.length > 17 ? 24 : (label.length > 11 ? 30 : 38)).setOrigin(0.5);
+    const hit = this.add.zone(0, 0, width, 56).setInteractive();
+    group.add([background, text, hit]);
+    this._accountContent.add(group);
+    hit._bouncyVisualTarget = group;
+    this._makeBouncyButton(hit, 1, callback);
+    return group;
+  }
+
+  _accountLine(text, y, size = 22, color = "#d7ecff") {
+    const i18n = window.GD_T || (value => value);
+    const line = this.add.text(0, y, i18n(text), {
+      fontFamily: "Arial, sans-serif",
+      fontSize: `${size}px`,
+      color,
+      align: "center",
+      wordWrap: { width: 650 }
+    }).setOrigin(0.5);
+    this._accountContent.add(line);
+    return line;
+  }
+
+  _accountInput(label, y, options = {}) {
+    const i18n = window.GD_T || (value => value);
+    const labelText = this.add.bitmapText(-210, y - 28, "bigFont", i18n(label), 23).setOrigin(0, 0.5);
+    this._accountContent.add(labelText);
+    const control = this._createTextInputOverlay({
+      x: 0,
+      y: y,
+      width: 440,
+      height: 44,
+      type: options.type || "text",
+      placeholder: i18n(label),
+      ariaLabel: i18n(label),
+      autocomplete: options.autocomplete || "off",
+      inputMode: options.inputMode,
+      maxLength: options.maxLength,
+      fontSize: 20,
+      onFocus: options.onFocus,
+      onEnter: options.onEnter
+    });
+    this._accountInputs.push(control);
+    labelText.setInteractive({ useHandCursor: true });
+    labelText.on("pointerup", () => control.focus());
+    return control;
+  }
+
+  _accountError(error) {
+    const message = String(error && error.message ? error.message : error || "Request failed.");
+    if (/username already|already exists|already taken/i.test(message)) return "Username already exists.";
+    if (/wrong username|invalid credentials|incorrect password/i.test(message)) return "Wrong username or password.";
+    if (/failed to fetch|networkerror|load failed/i.test(message)) return "Server unavailable. Using a local account.";
+    return message;
+  }
+
+  _setAccountStatus(text, isError = false) {
+    if (!this._accountStatus) return;
+    this._accountStatus.setText((window.GD_T || (value => value))(text));
+    this._accountStatus.setColor(isError ? "#ff8d8d" : "#a9e4ff");
+  }
+
+  _accountSetBusy(value) {
+    this._accountBusy = value;
+  }
+
+  _buildAccountLanding() {
+    this._accountView = "landing";
+    this._accountLine("Sign in or create an account.", -112, 25, "#ffffff");
+    this._accountLine("Your progress and levels can be kept in your account.", -72, 19, "#a9c9e8");
+    this._accountButton(-170, 25, "Log In", 280, () => { this._accountView = "login"; this._renderAccountContent(); });
+    this._accountButton(170, 25, "Register", 280, () => { this._accountView = "register"; this._renderAccountContent(); });
+    this._accountStatus = this.add.text(0, 172, "", {
+      fontFamily: "Arial, sans-serif", fontSize: "19px", color: "#a9e4ff", align: "center", wordWrap: { width: 650 }
+    }).setOrigin(0.5);
+    this._accountContent.add(this._accountStatus);
+  }
+
+  _buildAccountLogin() {
+    this._accountView = "login";
+    const username = this._accountInput("Username", -88, { autocomplete: "username", maxLength: 32 });
+    const password = this._accountInput("Password", -8, { type: "password", autocomplete: "current-password", maxLength: 128 });
+    this._accountStatus = this.add.text(0, 50, "", {
+      fontFamily: "Arial, sans-serif", fontSize: "19px", color: "#a9e4ff", align: "center", wordWrap: { width: 650 }
+    }).setOrigin(0.5);
+    this._accountContent.add(this._accountStatus);
+
+    const submit = async () => {
+      if (this._accountBusy) return;
+      const usernameValue = username.value.trim();
+      const passwordValue = password.value;
+      if (!usernameValue || !passwordValue) {
+        this._setAccountStatus("Enter username and password.", true);
+        return;
+      }
+      this._accountSetBusy(true);
+      this._setAccountStatus("Please wait...");
+      try {
+        const user = await window.AccountAPI.login(usernameValue, passwordValue);
+        if (!this._accountPopup) return;
+        this._accountView = "account";
+        this._renderAccountContent();
+        this._setAccountStatus(user.local ? "Signed in locally." : "Welcome back!");
+      } catch (error) {
+        this._setAccountStatus(this._accountError(error), true);
+      } finally {
+        this._accountSetBusy(false);
+      }
+    };
+
+    password.onEnter = submit;
+    username.el.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        password.focus();
+      }
+    });
+    this._accountButton(0, 105, "Log In", 300, submit);
+    this._accountButton(0, 180, "Back", 220, () => { this._accountView = "landing"; this._renderAccountContent(); });
+  }
+
+  _buildAccountRegister() {
+    this._accountView = "register";
+    const username = this._accountInput("Username", -150, { autocomplete: "username", maxLength: 32 });
+    const email = this._accountInput("Email (optional)", -82, { type: "email", autocomplete: "email", inputMode: "email", maxLength: 120 });
+    const password = this._accountInput("Password", -14, { type: "password", autocomplete: "new-password", maxLength: 128 });
+    const confirm = this._accountInput("Confirm Password", 54, { type: "password", autocomplete: "new-password", maxLength: 128 });
+    this._accountStatus = this.add.text(0, 98, "", {
+      fontFamily: "Arial, sans-serif", fontSize: "19px", color: "#a9e4ff", align: "center", wordWrap: { width: 650 }
+    }).setOrigin(0.5);
+    this._accountContent.add(this._accountStatus);
+
+    const submit = async () => {
+      if (this._accountBusy) return;
+      const usernameValue = username.value.trim();
+      const emailValue = email.value.trim();
+      const passwordValue = password.value;
+      if (!usernameValue || !passwordValue) {
+        this._setAccountStatus("Enter username and password.", true);
+        return;
+      }
+      if (passwordValue.length < 4) {
+        this._setAccountStatus("Password must be at least 4 characters.", true);
+        return;
+      }
+      if (passwordValue !== confirm.value) {
+        this._setAccountStatus("Passwords do not match.", true);
+        return;
+      }
+      this._accountSetBusy(true);
+      this._setAccountStatus("Please wait...");
+      try {
+        const user = await window.AccountAPI.register(usernameValue, emailValue, passwordValue);
+        if (!this._accountPopup) return;
+        this._accountView = "account";
+        this._renderAccountContent();
+        this._setAccountStatus(user.local ? "Account created locally." : "Account created.");
+      } catch (error) {
+        this._setAccountStatus(this._accountError(error), true);
+      } finally {
+        this._accountSetBusy(false);
+      }
+    };
+
+    confirm.onEnter = submit;
+    this._accountButton(0, 145, "Register", 300, submit);
+    this._accountButton(0, 212, "Back to Login", 240, () => { this._accountView = "login"; this._renderAccountContent(); });
+  }
+
+  _buildAccountProfile() {
+    this._accountView = "account";
+    const i18n = window.GD_T || (value => value);
+    const user = window.AccountAPI.currentUser || {};
+    const local = !!user.local;
+    const name = user.username || "Unknown";
+    this._accountLine(i18n("Logged in as") + " " + name, -112, 26, "#ffffff");
+    this._accountLine(local ? "Local account" : "Online account", -72, 20, local ? "#ffd58a" : "#9fe9b1");
+    this._accountLine(local ? "Saved only on this device." : "Cloud saves are available.", -40, 18, "#a9c9e8");
+    this._accountStatus = this.add.text(0, 78, "", {
+      fontFamily: "Arial, sans-serif", fontSize: "19px", color: "#a9e4ff", align: "center", wordWrap: { width: 650 }
+    }).setOrigin(0.5);
+    this._accountContent.add(this._accountStatus);
+
+    this._accountButton(-160, 20, local ? "Save on this device" : "Cloud Save", 300, async () => {
+      if (this._accountBusy) return;
+      this._accountSetBusy(true);
+      this._setAccountStatus("Please wait...");
+      try {
+        const result = await window.AccountAPI.setCloudSave(window.AccountAPI.collectLocalData());
+        this._setAccountStatus(result && result.local ? "Saved on this device." : "Cloud save complete.");
+      } catch (error) {
+        this._setAccountStatus(this._accountError(error), true);
+      } finally {
+        this._accountSetBusy(false);
+      }
+    });
+
+    this._accountButton(160, 20, local ? "Load from this device" : "Cloud Load", 300, async () => {
+      if (this._accountBusy) return;
+      this._accountSetBusy(true);
+      this._setAccountStatus("Please wait...");
+      try {
+        const save = await window.AccountAPI.getCloudSave();
+        if (!save) {
+          this._setAccountStatus("No save found.", true);
+          return;
+        }
+        window.AccountAPI.applyLocalData(save);
+        this._setAccountStatus("Save loaded. Restart the game to apply it.");
+      } catch (error) {
+        this._setAccountStatus(this._accountError(error), true);
+      } finally {
+        this._accountSetBusy(false);
+      }
+    });
+
+    this._accountButton(0, 132, "Logout", 240, async () => {
+      if (this._accountBusy) return;
+      this._accountSetBusy(true);
+      await window.AccountAPI.logout();
+      if (!this._accountPopup) return;
+      this._accountView = "landing";
+      this._renderAccountContent();
+      this._setAccountStatus("Logged out.");
+      this._accountSetBusy(false);
+    });
+
+    this._accountButton(0, 205, "Close", 220, () => this._closeAccountPopup());
+  }
+
+ _buildSettingsPopup(initialPage = 0) {
     if (this._settingsPopup) return;
 
     const i18n = window.GD_T || (value => value);
@@ -5399,23 +5863,27 @@ _buildSettingsPopup(initialPage = 0) {
         const qualityLabel = this.add.bitmapText(column1X, startY - 30, "bigFont", "Graphics Quality", 24).setOrigin(0, 0.5);
         container.add(qualityLabel);
         const qualityOptions = [["auto", "Auto"], ["low", "Low"], ["medium", "Medium"], ["max", "Max"]];
+        const qualityBorder = this.textures.get("GJ_button01").source[0].width * 0.3;
         qualityOptions.forEach((option, index) => {
             const selected = (window.gdGraphicsQuality || "auto") === option[0];
-            const qualityBtn = this.add.text(column1X + index * 100, startY + 5, option[1], {
-                fontFamily: "Arial, sans-serif",
-                fontSize: "16px",
-                color: selected ? "#ffffff" : "#b9d7ff",
-                backgroundColor: selected ? "#1f8fff" : "#001f4f",
-                padding: { x: 6, y: 7 },
-                align: "center"
-            }).setOrigin(0, 0.5).setFixedSize(92, 34).setInteractive({ useHandCursor: true });
-            qualityBtn.on("pointerup", () => {
+            const qualityX = column1X + 44 + index * 94;
+            const qualityBg = this.add.nineslice(qualityX, startY + 5, "GJ_button01", null, 88, 40, qualityBorder, qualityBorder, qualityBorder, qualityBorder)
+                .setOrigin(0.5)
+                .setTint(selected ? 0xffffff : 0x666666)
+                .setInteractive({ useHandCursor: true });
+            const qualityLabel = this.add.bitmapText(qualityX, startY + 1, "goldFont", option[1], 21)
+                .setOrigin(0.5)
+                .setTint(selected ? 0xffffff : 0x999999)
+                .setInteractive({ useHandCursor: true });
+            const selectQuality = () => {
                 window.gdGraphicsQuality = option[0];
                 this._applyGraphicsSettings();
                 this._saveSettings();
                 buildPage(1);
-            });
-            container.add(qualityBtn);
+            };
+            qualityBg.on("pointerup", selectQuality);
+            qualityLabel.on("pointerup", selectQuality);
+            container.add([qualityBg, qualityLabel]);
         });
 
         createToggle(container, column1X, startY + 40, "FPS Unlock",
@@ -8203,7 +8671,7 @@ _showwippopup() {
     if (this._menuActive) {
       const _anyOverlayOpen = this._iconOverlay || this._creatorOverlay || this._searchOverlay ||
         this._onlineLevelsOverlay || this._settingsLayerOverlay || this._settingsPopup ||
-        this._infoPopup || this._newgroundsPopup || this._statsLayerOverlay || this._updateLogPopup;
+        this._accountPopup || this._infoPopup || this._newgroundsPopup || this._statsLayerOverlay || this._updateLogPopup;
       if (!_anyOverlayOpen && (this._spaceKey.isDown || this._upKey.isDown || this._wKey.isDown) && !this._spaceWasDown) {
         if (this._creatorMenuOpen) return;
         this._spaceWasDown = true;
@@ -9923,7 +10391,7 @@ window.open("https://github.com/web-dashers/web-dashers.github.io", "_blank"); }
         return grp;
     };
 
-    _makeSettingsBtn(_sColL, _sRow1Y, "Account",    _sBtnW2, false, null);
+    _makeSettingsBtn(_sColL, _sRow1Y, "Account",    _sBtnW2, true,  () => { this._buildAccountPopup(); });
     _makeSettingsBtn(_sColR, _sRow1Y, "How To Play", _sBtnW2, true, () => { this._buildHowToPlayPopup(); });
     _makeSettingsBtn(_sColL, _sRow2Y, "Options",    _sBtnW2, true,  () => { this._buildSettingsPopup(); });
     _makeSettingsBtn(_sColR, _sRow2Y, "Graphics",   _sBtnW2, true,  () => { this._buildSettingsPopup(1); });
