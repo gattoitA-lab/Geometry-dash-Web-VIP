@@ -2128,7 +2128,13 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         onEnter: () => _doSearch()
       });
 
-      blocker.on("pointerdown", () => {
+      blocker.on("pointerdown", (pointer) => {
+        const insideField =
+          pointer.x >= innerPanelX &&
+          pointer.x <= innerPanelX + innerPanelW &&
+          pointer.y >= innerPanelY &&
+          pointer.y <= innerPanelY + innerPanelH;
+        if (insideField) return;
         searchKeyboardInput.blur();
         _blurInput();
       });
@@ -2556,6 +2562,20 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         searchTapButton.addEventListener("pointerdown", activate, { passive: false });
         searchTapButton.addEventListener("touchstart", activate, { passive: false });
         searchTapButton.addEventListener("click", activate);
+        const hitSearchTap = (clientX, clientY) => {
+          if (!searchTapButton) return false;
+          const rect = searchTapButton.getBoundingClientRect();
+          return !!rect.width && !!rect.height &&
+            clientX >= rect.left - 8 && clientX <= rect.right + 8 &&
+            clientY >= rect.top - 8 && clientY <= rect.bottom + 8;
+        };
+        const onDocumentTap = (event) => {
+          const point = (event.touches && event.touches[0]) ||
+            (event.changedTouches && event.changedTouches[0]) || event;
+          if (hitSearchTap(point.clientX, point.clientY)) activate(event);
+        };
+        document.addEventListener("touchstart", onDocumentTap, { capture: true, passive: false });
+        document.addEventListener("pointerdown", onDocumentTap, { capture: true, passive: false });
         const onResize = () => position();
         const visualViewport = window.visualViewport;
         window.addEventListener("resize", onResize);
@@ -2565,6 +2585,8 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
           window.removeEventListener("resize", onResize);
           window.removeEventListener("orientationchange", onResize);
           if (visualViewport) visualViewport.removeEventListener("resize", onResize);
+          document.removeEventListener("touchstart", onDocumentTap, true);
+          document.removeEventListener("pointerdown", onDocumentTap, true);
           if (searchTapButton && searchTapButton.parentNode) {
             searchTapButton.parentNode.removeChild(searchTapButton);
           }
@@ -5191,16 +5213,57 @@ _buildPauseOverlay() {
         }
       } catch (_) {}
     };
+    let lastTouchFocus = 0;
+    const focusFromTouch = () => {
+      lastTouchFocus = Date.now();
+      focusInput();
+    };
     // The native touch/pointer event is the only reliable moment to focus a
     // field on iOS and Android. Phaser callbacks run later, after the gesture.
     const onFieldTouch = (event) => {
       event.stopPropagation();
-      focusInput();
+      focusFromTouch();
     };
     input.addEventListener("pointerdown", onFieldTouch, { passive: true });
     input.addEventListener("touchstart", onFieldTouch, { passive: true });
     input.addEventListener("touchend", focusInput, { passive: true });
     input.addEventListener("click", focusInput);
+
+    // Some mobile browsers deliver the touch to the canvas even when the
+    // transparent field is on top. This document-level hit test focuses the
+    // field during the original touch gesture, which is what opens the keyboard.
+    const hitInput = (clientX, clientY) => {
+      const rect = input.getBoundingClientRect();
+      return !!rect.width && !!rect.height &&
+        clientX >= rect.left - 6 && clientX <= rect.right + 6 &&
+        clientY >= rect.top - 4 && clientY <= rect.bottom + 4;
+    };
+    const onDocumentTouch = (event) => {
+      const touch = event.touches && event.touches[0];
+      if (touch && hitInput(touch.clientX, touch.clientY)) focusFromTouch();
+    };
+    const onDocumentTouchEnd = (event) => {
+      const touch = event.changedTouches && event.changedTouches[0];
+      if (touch && hitInput(touch.clientX, touch.clientY)) focusFromTouch();
+    };
+    const onDocumentPointer = (event) => {
+      if (event.pointerType === "mouse") return;
+      if (event.pointerType && event.pointerType !== "touch" && event.pointerType !== "pen") return;
+      if (event.button && event.button !== 0) return;
+      if (hitInput(event.clientX, event.clientY)) focusFromTouch();
+    };
+    // WebKit fires a compatibility mousedown on the canvas after a tap. Its
+    // default action blurs the field and closes the keyboard immediately.
+    const onDocumentMouseDown = (event) => {
+      if (Date.now() - lastTouchFocus > 1200) return;
+      if (!hitInput(event.clientX, event.clientY)) return;
+      event.preventDefault();
+      focusInput();
+    };
+    document.addEventListener("touchstart", onDocumentTouch, { capture: true, passive: true });
+    document.addEventListener("touchend", onDocumentTouchEnd, { capture: true, passive: true });
+    document.addEventListener("pointerdown", onDocumentPointer, { capture: true, passive: true });
+    document.addEventListener("mousedown", onDocumentMouseDown, { capture: true });
     // Keep Phaser's window-level keyboard handlers (W/A/S/D, space, etc.)
     // from cancelling characters typed into this real input.
     const stopGameKeyboard = (event) => event.stopPropagation();
@@ -5255,6 +5318,10 @@ _buildPauseOverlay() {
         window.removeEventListener("resize", resize);
         window.removeEventListener("orientationchange", resize);
         if (visualViewport) visualViewport.removeEventListener("resize", resize);
+        document.removeEventListener("touchstart", onDocumentTouch, true);
+        document.removeEventListener("touchend", onDocumentTouchEnd, true);
+        document.removeEventListener("pointerdown", onDocumentPointer, true);
+        document.removeEventListener("mousedown", onDocumentMouseDown, true);
         if (labelProxy && labelProxy.parentNode) labelProxy.parentNode.removeChild(labelProxy);
         labelProxy = null;
         labelProxyRect = null;
